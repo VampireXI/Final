@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Supervised Learning{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-brain" style="color:#667eea"></i> Supervised Learning</h1>
+    <p>Target: packaging_influence — DecisionTree / RandomForest / LogisticRegression</p>
+</div>
+
+<!-- KPI Cards -->
+<div class="cards">
+    <div class="card">
+        <div class="icon icon-blue"><i class="fas fa-database"></i></div>
+        <div class="label">Total Data</div>
+        <div class="value">{{ total }}</div>
+        <div class="sub">Train: 235 / Test: 59</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-green"><i class="fas fa-trophy"></i></div>
+        <div class="label">Best Model</div>
+        <div class="value" style="font-size:1rem">{{ best.model_name }}</div>
+        <div class="sub">F1 = {{ "%.4f"|format(best.f1_score) }}</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-purple"><i class="fas fa-bullseye"></i></div>
+        <div class="label">Accuracy</div>
+        <div class="value">{{ "%.1f"|format(best.accuracy * 100) }}%</div>
+        <div class="sub">{{ best.model_name }}</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-orange"><i class="fas fa-star"></i></div>
+        <div class="label">ROC-AUC</div>
+        <div class="value">{{ "%.3f"|format(best.roc_auc) }}</div>
+        <div class="sub">{{ best.model_name }}</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-red"><i class="fas fa-crosshairs"></i></div>
+        <div class="label">Target</div>
+        <div class="value" style="font-size:.9rem">packaging_influence</div>
+        <div class="sub">Effect={{ target_dist.get('1',0) }}, No={{ target_dist.get('0',0) }}</div>
+    </div>
+</div>
+
+<!-- Model Comparison Table -->
+<h2 class="section-title">Model Performance Comparison</h2>
+<table class="data-table">
+    <thead><tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>CV Accuracy</th><th>ROC-AUC</th></tr></thead>
+    <tbody>
+    {% for m in models %}
+    <tr>
+        <td style="font-weight:600;color:#fff">{{ m.model_name }}{% if m.is_best %}<span class="badge-best"><i class="fas fa-crown"></i> Best</span>{% endif %}</td>
+        <td>{{ "%.4f"|format(m.accuracy) }}</td>
+        <td>{{ "%.4f"|format(m.precision_score) }}</td>
+        <td>{{ "%.4f"|format(m.recall) }}</td>
+        <td style="color:#00b894;font-weight:700">{{ "%.4f"|format(m.f1_score) }}</td>
+        <td>{{ "%.4f"|format(m.cv_accuracy) }}</td>
+        <td>{{ "%.3f"|format(m.roc_auc) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- Stats Charts -->
+<h2 class="section-title">Data Statistics (from Database)</h2>
+<div class="grid-2">
+    <div class="box">
+        <h3><i class="fas fa-bullseye" style="color:#00b894"></i> Target Distribution</h3>
+        <canvas id="targetChart" class="mini-chart"></canvas>
+    </div>
+    <div class="box">
+        <h3><i class="fas fa-sliders-h" style="color:#667eea"></i> Factor Averages (1-5)</h3>
+        <canvas id="factorChart" class="mini-chart"></canvas>
+    </div>
+</div>
+
+<!-- Model Charts -->
+<h2 class="section-title">Model Visualizations</h2>
+<div class="grid-2">
+    {% for c in charts %}
+    <div class="box">
+        <h3>{{ c.title }}</h3>
+        <img src="/output/{{ c.file }}" alt="{{ c.title }}" loading="lazy">
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+new Chart(document.getElementById('targetChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Effect (1)', 'No Effect (0)'],
+        datasets: [{ data: [{{ target_dist.get('1',0) }}, {{ target_dist.get('0',0) }}], backgroundColor: ['#00b894','#ff7675'], borderWidth: 0 }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } } }
+});
+
+new Chart(document.getElementById('factorChart'), {
+    type: 'radar',
+    data: {
+        labels: ['Natural','Imported','Taste','Foreign','Brand Fame'],
+        datasets: [{
+            data: [{{ factor_avg.factor_natural }},{{ factor_avg.factor_imported }},{{ factor_avg.factor_taste }},{{ factor_avg.factor_foreign }},{{ factor_avg.factor_brand_fame }}],
+            backgroundColor: 'rgba(102,126,234,0.2)', borderColor: '#667eea', pointBackgroundColor: '#667eea'
+        }]
+    },
+    options: { scales: { r: { min: 1, max: 5 } }, plugins: { legend: { display: false } } }
+});
+</script>
+{% endblock %}

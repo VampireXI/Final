@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-home" style="color:#667eea"></i> Dashboard Overview</h1>
+    <p>Cat Food Packaging Survey — AI & Data Analytics</p>
+</div>
+
+<!-- KPI Cards -->
+<div class="cards">
+    <div class="card">
+        <div class="icon icon-blue"><i class="fas fa-database"></i></div>
+        <div class="label">Total Responses</div>
+        <div class="value">{{ total }}</div>
+        <div class="sub">Survey respondents</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-green"><i class="fas fa-trophy"></i></div>
+        <div class="label">Best Model</div>
+        <div class="value" style="font-size:1.1rem">{{ best.model_name }}</div>
+        <div class="sub">F1 = {{ "%.4f"|format(best.f1_score) }}</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-purple"><i class="fas fa-bullseye"></i></div>
+        <div class="label">Best Accuracy</div>
+        <div class="value">{{ "%.1f"|format(best.accuracy * 100) }}%</div>
+        <div class="sub">{{ best.model_name }}</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-orange"><i class="fas fa-layer-group"></i></div>
+        <div class="label">Clusters</div>
+        <div class="value">3</div>
+        <div class="sub">Customer segments</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-red"><i class="fas fa-star"></i></div>
+        <div class="label">ROC-AUC</div>
+        <div class="value">{{ "%.3f"|format(best.roc_auc) }}</div>
+        <div class="sub">{{ best.model_name }}</div>
+    </div>
+</div>
+
+<!-- Demographics + Cluster Summary -->
+<h2 class="section-title">Demographics Overview</h2>
+<div class="grid-2">
+    <div class="box">
+        <h3><i class="fas fa-users" style="color:#667eea"></i> Age Distribution</h3>
+        <canvas id="ageChart" class="mini-chart"></canvas>
+    </div>
+    <div class="box">
+        <h3><i class="fas fa-venus-mars" style="color:#e17055"></i> Gender Distribution</h3>
+        <canvas id="genderChart" class="mini-chart"></canvas>
+    </div>
+</div>
+
+<h2 class="section-title">Customer Segments (Persona Preview)</h2>
+{% for p in personas %}
+<div class="persona-card">
+    <h3><span class="tag tag-{{ p.cluster_id }}">Cluster {{ p.cluster_id }}</span> {{ p.engagement }}</h3>
+    <p class="detail">
+        <strong>Size:</strong> {{ p.size }} ({{ p.pct }}%) &nbsp;|&nbsp;
+        <strong>Top Factor:</strong> {{ p.top_factor }} &nbsp;|&nbsp;
+        <strong>Top Packaging:</strong> {{ p.top_pkg }} &nbsp;|&nbsp;
+        <strong>Preferred:</strong> {{ p.top_option }} &nbsp;|&nbsp;
+        <strong>Profile:</strong> {{ p.age }}, {{ p.gender }}
+    </p>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+new Chart(document.getElementById('ageChart'), {
+    type: 'bar',
+    data: {
+        labels: [{% for a in age %}'{{ a.age }}'{{ "," if not loop.last }}{% endfor %}],
+        datasets: [{
+            data: [{% for a in age %}{{ a.c }}{{ "," if not loop.last }}{% endfor %}],
+            backgroundColor: ['#667eea','#764ba2','#00b894','#fdcb6e'],
+            borderRadius: 8, borderSkipped: false
+        }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('genderChart'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for g in gender %}'{{ g.gender }}'{{ "," if not loop.last }}{% endfor %}],
+        datasets: [{
+            data: [{% for g in gender %}{{ g.c }}{{ "," if not loop.last }}{% endfor %}],
+            backgroundColor: ['#e84393','#667eea','#00cec9'],
+            borderWidth: 0
+        }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+{% endblock %}

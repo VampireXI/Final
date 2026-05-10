@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Business Insight{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-chart-pie" style="color:#667eea"></i> Business Insight</h1>
+    <p>Strategic recommendations from AI analysis — {{ total }} survey responses</p>
+</div>
+
+<!-- Key Findings Cards -->
+<div class="cards">
+    <div class="card">
+        <div class="icon icon-green"><i class="fas fa-check-circle"></i></div>
+        <div class="label">Key Finding</div>
+        <div class="value" style="font-size:.95rem">67% say packaging matters</div>
+        <div class="sub">packaging_influence = 1</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-purple"><i class="fas fa-box-open"></i></div>
+        <div class="label">Top Attribute</div>
+        <div class="value" style="font-size:.95rem">Benefit Symbol</div>
+        <div class="sub">Avg = {{ pkg_avg.pkg_benefit_symbol }}</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-blue"><i class="fas fa-palette"></i></div>
+        <div class="label">Best Design</div>
+        <div class="value" style="font-size:.95rem">Option 3</div>
+        <div class="sub">Highest want-to-buy score</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-orange"><i class="fas fa-utensils"></i></div>
+        <div class="label">Top Factor</div>
+        <div class="value" style="font-size:.95rem">Taste</div>
+        <div class="sub">Across all clusters</div>
+    </div>
+    <div class="card">
+        <div class="icon icon-red"><i class="fas fa-robot"></i></div>
+        <div class="label">ML Accuracy</div>
+        <div class="value">{{ "%.1f"|format(best.accuracy * 100) }}%</div>
+        <div class="sub">{{ best.model_name }}</div>
+    </div>
+</div>
+
+<!-- Strategic Recommendations -->
+<h2 class="section-title">Strategic Recommendations</h2>
+
+<div class="box" style="margin-bottom:18px">
+    <h3><i class="fas fa-lightbulb" style="color:#fdcb6e"></i> 1. Packaging Design Strategy</h3>
+    <div class="detail" style="font-size:.85rem;color:#8892b0;line-height:2">
+        <p><strong style="color:#fff">Benefit Symbol is #1 priority</strong> (avg {{ pkg_avg.pkg_benefit_symbol }}/5) — Consumers want clear symbols showing health benefits (e.g., hairball reduction, bone strength). This should be the most prominent element on packaging.</p>
+        <p style="margin-top:8px"><strong style="color:#fff">Kibble Image ranks #2</strong> (avg {{ pkg_avg.pkg_kibble_image }}/5) — Showing actual kibble shapes on packaging builds trust and helps buyers visualize the product.</p>
+        <p style="margin-top:8px"><strong style="color:#fff">Guarantee marks matter</strong> (avg {{ pkg_avg.pkg_guarantee }}/5) — Awards, certifications, and "#1 bestseller" badges significantly influence purchase decisions.</p>
+    </div>
+</div>
+
+<div class="box" style="margin-bottom:18px">
+    <h3><i class="fas fa-users" style="color:#667eea"></i> 2. Customer Segment Strategies</h3>
+    {% for p in personas %}
+    <div style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+        <p style="font-weight:700;color:#fff;font-size:.9rem">
+            <span class="tag tag-{{ p.cluster_id }}">Cluster {{ p.cluster_id }}</span>
+            {{ p.engagement }} ({{ p.size }} persons, {{ p.pct }}%)
+        </p>
+        <p style="color:#8892b0;font-size:.82rem;margin-top:6px">{{ p.description }}</p>
+        <p style="color:#636e88;font-size:.78rem;margin-top:4px">
+            <i class="fas fa-arrow-right" style="color:#667eea"></i>
+            {% if p.cluster_id == 0 %}
+            <strong>Strategy:</strong> Focus on natural ingredients and benefit communication. This group responds to health-focused messaging but is skeptical of overly designed packaging. Keep design clean and information-rich.
+            {% elif p.cluster_id == 1 %}
+            <strong>Strategy:</strong> This is the largest segment. They are taste-driven moderate buyers. Use taste-appeal imagery and benefit symbols prominently. Option 3 design performs best here. Mid-range pricing with clear value proposition.
+            {% else %}
+            <strong>Strategy:</strong> Premium positioning works best. This high-engagement group values all packaging attributes highly. Use premium materials, detailed ingredient info, and certifications. They're willing to pay more for quality perception.
+            {% endif %}
+        </p>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="box" style="margin-bottom:18px">
+    <h3><i class="fas fa-palette" style="color:#e84393"></i> 3. Design Option Recommendation</h3>
+    <p style="color:#8892b0;font-size:.82rem;margin-bottom:14px">Want-to-buy score comparison across all 10 design options</p>
+    <canvas id="optChart" style="height:220px"></canvas>
+</div>
+
+<!-- Packaging Attribute Ranking -->
+<h2 class="section-title">Packaging Attribute Ranking</h2>
+<div class="box">
+    <h3><i class="fas fa-sort-amount-down" style="color:#00b894"></i> Average Importance Score (1-5)</h3>
+    <canvas id="pkgChart" style="height:280px"></canvas>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const pkgData = {
+    'Benefit Symbol': {{ pkg_avg.pkg_benefit_symbol }},
+    'Kibble Image': {{ pkg_avg.pkg_kibble_image }},
+    'Guarantee': {{ pkg_avg.pkg_guarantee }},
+    'Ingredient Image': {{ pkg_avg.pkg_ingredient_image }},
+    'Premium Look': {{ pkg_avg.pkg_premium }},
+    'Eco Friendly': {{ pkg_avg.pkg_eco_friendly }},
+    'Origin Symbol': {{ pkg_avg.pkg_origin_symbol }},
+    'Cat Image': {{ pkg_avg.pkg_cat_image }}
+};
+
+const sorted = Object.entries(pkgData).sort((a,b) => b[1]-a[1]);
+new Chart(document.getElementById('pkgChart'), {
+    type: 'bar',
+    data: {
+        labels: sorted.map(s=>s[0]),
+        datasets: [{
+            data: sorted.map(s=>s[1]),
+            backgroundColor: sorted.map((_,i) => `hsl(${250 - i*20}, 70%, ${55 + i*3}%)`),
+            borderRadius: 8, borderSkipped: false
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: { x: { min: 1, max: 5 } }
+    }
+});
+
+new Chart(document.getElementById('optChart'), {
+    type: 'bar',
+    data: {
+        labels: ['Opt 1','Opt 2','Opt 3','Opt 4','Opt 5','Opt 6','Opt 7','Opt 8','Opt 9','Opt 10'],
+        datasets: [{
+            data: [{{ opt_avg.opt1 }},{{ opt_avg.opt2 }},{{ opt_avg.opt3 }},{{ opt_avg.opt4 }},{{ opt_avg.opt5 }},{{ opt_avg.opt6 }},{{ opt_avg.opt7 }},{{ opt_avg.opt8 }},{{ opt_avg.opt9 }},{{ opt_avg.opt10 }}],
+            backgroundColor: [{{ opt_avg.opt3 }}=={{ opt_avg.opt3 }} ? '#00b894' : '#667eea','#667eea','#00b894','#667eea','#667eea','#667eea','#667eea','#667eea','#667eea','#667eea'],
+            borderRadius: 8, borderSkipped: false
+        }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { min: 1, max: 5 } } }
+});
+</script>
+{% endblock %}
